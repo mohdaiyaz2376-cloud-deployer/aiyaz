@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Crick Heroes — Playground</title>
+  <meta name="description" content="Crick Heroes clone — interactive scoreboard, player roster and mini-simulator" />
+  <style>
+    :root{
+      --bg:#0b1221; --card:#0f1724; --accent:#ffd166; --muted:#95a3b8; --glass: rgba(255,255,255,0.03);
+      --success:#28a745; --danger:#e63946;
+      font-synthesis: none;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;color:#e6eef8;background:linear-gradient(180deg,#071026 0%, #071a2b 100%);}
+    .container{max-width:1100px;margin:28px auto;padding:20px}
+
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#ff8a00);display:flex;align-items:center;justify-content:center;font-weight:800;color:#09101a}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-top:20px}
+
+    .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 20px rgba(2,6,23,0.6);}
+    .center{display:flex;flex-direction:column;align-items:center;}
+
+    /* Scoreboard */
+    .scoreboard{display:flex;align-items:center;justify-content:space-between;padding:18px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));}
+    .score-left{display:flex;flex-direction:column}
+    .team{font-weight:700;font-size:18px}
+    .runs{font-size:34px;font-weight:900}
+    .meta{color:var(--muted);font-size:13px}
+
+    /* Controls */
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    button{background:var(--glass);border:1px solid rgba(255,255,255,0.04);color:#eaf4ff;padding:10px 14px;border-radius:8px;cursor:pointer}
+    button.primary{background:linear-gradient(90deg,var(--accent),#ff8a00);color:#081019;border:none}
+    button.danger{background:var(--danger);color:white}
+
+    /* Players */
+    .players{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px}
+    .player{padding:10px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);display:flex;align-items:center;gap:10px}
+    .avatar{width:54px;height:54;border-radius:8px;background:linear-gradient(135deg,#5eead4,#60a5fa);display:flex;align-items:center;justify-content:center;font-weight:700;color:#042029}
+    .pmeta{font-size:13px}
+    .pname{font-weight:700}
+    .pstat{color:var(--muted);font-size:12px}
+
+    /* Mini scoreboard panel */
+    .mini{display:flex;flex-direction:column;gap:6px}
+    .row{display:flex;align-items:center;justify-content:space-between}
+
+    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+
+    @media (max-width:900px){.grid{grid-template-columns:1fr} .logo{width:48px;height:48px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">CH</div>
+        <div>
+          <h1>Crick Heroes — Playground</h1>
+          <p class="lead">Mini score dashboard · demo clone · non-commercial</p>
+        </div>
+      </div>
+      <div>
+        <button id="resetBtn">Reset</button>
+        <button id="exportBtn" class="primary">Export Score</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <!-- Left: main scoreboard and players -->
+      <section>
+        <div class="card">
+          <div class="scoreboard">
+            <div class="score-left">
+              <div class="team">Crick Heroes XI</div>
+              <div class="runs" id="scoreText">0/0 (0.0)</div>
+              <div class="meta" id="metaText">Overs: 0 • Wickets: 0 • Run Rate: 0.00</div>
+            </div>
+            <div class="center">
+              <div style="font-size:12px;color:var(--muted);">Current Over</div>
+              <div id="overText" style="font-weight:800;font-size:20px;">0.0</div>
+              <div style="height:8px"></div>
+              <div style="font-size:12px;color:var(--muted);">Striker / Non-Striker</div>
+              <div id="batsmenText" style="font-weight:700">- / -</div>
+            </div>
+            <div style="width:220px">
+              <div style="font-size:13px;color:var(--muted)">Options</div>
+              <div class="controls">
+                <button data-run="0">Dot</button>
+                <button data-run="1">1</button>
+                <button data-run="2">2</button>
+                <button data-run="3">3</button>
+                <button data-run="4">4</button>
+                <button data-run="6">6</button>
+                <button data-action="w">W</button>
+                <button data-action="wd">Wd</button>
+                <button id="nextBall" class="primary">Next Ball</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="players" id="playersList">
+            <!-- players inserted by JS -->
+          </div>
+
+          <div style="margin-top:12px;display:flex;gap:8px;align-items:center;justify-content:space-between">
+            <div class="mini">
+              <div class="row"><div>Overs</div><div id="oversCount">0</div></div>
+              <div class="row"><div>Wickets</div><div id="wicketsCount">0</div></div>
+            </div>
+            <div class="mini">
+              <div class="row"><div>Extras</div><div id="extrasCount">0</div></div>
+              <div class="row"><div>RR</div><div id="rrCount">0.00</div></div>
+            </div>
+            <div>
+              <small class="pstat">Tip: Use buttons to score. Click a player to set striker/non-striker.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- simple log -->
+        <div class="card" style="margin-top:12px">
+          <div style="font-weight:700;margin-bottom:8px">Over Log</div>
+          <div id="ballLog" style="color:var(--muted);font-size:13px;min-height:40px"></div>
+        </div>
+      </section>
+
+      <!-- Right: controls and quick actions -->
+      <aside>
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:8px">Match Controls</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button id="undoBtn">Undo last ball</button>
+            <button id="swapBtn">Swap Batsmen</button>
+            <button id="addPlayerBtn">Add Player</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div style="font-weight:700;margin-bottom:8px">Score Export (JSON)</div>
+          <pre id="exportArea" style="white-space:pre-wrap;background:#071426;padding:10px;border-radius:8px;color:var(--muted);max-height:280px;overflow:auto">{ }
+          </pre>
+        </div>
+
+      </aside>
+    </main>
+
+    <footer>
+      Built with ❤️ — Crick Heroes clone demo
+    </footer>
+  </div>
+
+  <script>
+    // --- initial demo roster ---
+    const roster = [
+      {id:1,name:'R. Sharma',runs:0,balls:0},
+      {id:2,name:'D. Kumar',runs:0,balls:0},
+      {id:3,name:'S. Patel',runs:0,balls:0},
+      {id:4,name:'M. Singh',runs:0,balls:0},
+      {id:5,name:'A. Khan',runs:0,balls:0},
+      {id:6,name:'V. Roy',runs:0,balls:0},
+      {id:7,name:'P. Das',runs:0,balls:0},
+      {id:8,name:'H. Iyer',runs:0,balls:0},
+      {id:9,name:'N. Mehta',runs:0,balls:0},
+      {id:10,name:'B. Rao',runs:0,balls:0},
+      {id:11,name:'K. Verma',runs:0,balls:0}
+    ];
+
+    // match state
+    const state = {
+      runs:0, wickets:0, overs:0, ballsInOver:0, extras:0, log:[],
+      striker:null, nonStriker:null, nextBatIndex:2
+    };
+
+    // initialize
+    function renderPlayers(){
+      const list = document.getElementById('playersList'); list.innerHTML='';
+      roster.forEach((p,idx)=>{
+        const el = document.createElement('div'); el.className='player'; el.dataset.index=idx;
+        el.innerHTML = `<div class="avatar">${p.name.split(' ')[0][0]}</div><div class="pmeta"><div class="pname">${p.name}</div><div class="pstat">${p.runs} ( ${p.balls} )</div></div>`;
+        el.addEventListener('click', ()=>selectBatsman(idx));
+        list.appendChild(el);
+      });
+      updateUI();
+    }
+
+    function selectBatsman(idx){
+      // set striker if empty, else non-striker
+      if(state.striker === null){ state.striker = idx; }
+      else if(state.nonStriker === null && idx !== state.striker){ state.nonStriker = idx; }
+      else if(idx === state.striker){ state.striker = null; }
+      else if(idx === state.nonStriker){ state.nonStriker = null; }
+      updateUI();
+    }
+
+    function updateUI(){
+      document.getElementById('scoreText').textContent = `${state.runs}/${state.wickets} (${state.overs}.${state.ballsInOver})`;
+      const rr = (state.overs + state.ballsInOver/6) === 0 ? 0 : (state.runs / (state.overs + state.ballsInOver/6)).toFixed(2);
+      document.getElementById('metaText').textContent = `Overs: ${state.overs}.${state.ballsInOver} • Wickets: ${state.wickets} • Run Rate: ${rr}`;
+      document.getElementById('oversCount').textContent = state.overs;
+      document.getElementById('wicketsCount').textContent = state.wickets;
+      document.getElementById('extrasCount').textContent = state.extras;
+      document.getElementById('rrCount').textContent = rr;
+      document.getElementById('overText').textContent = `${state.overs}.${state.ballsInOver}`;
+      document.getElementById('batsmenText').textContent = `${state.striker !== null ? roster[state.striker].name : '-'} / ${state.nonStriker !== null ? roster[state.nonStriker].name : '-'}`;
+
+      // highlight selected players
+      document.querySelectorAll('.player').forEach(el=>{
+        el.style.outline='none'; el.style.border='none';
+        const i = Number(el.dataset.index);
+        if(i===state.striker) el.style.boxShadow='inset 0 0 0 2px rgba(255,209,102,0.12)';
+        else if(i===state.nonStriker) el.style.boxShadow='inset 0 0 0 2px rgba(255,255,255,0.02)';
+      });
+
+      // log
+      document.getElementById('ballLog').textContent = state.log.slice(-10).reverse().join('\n');
+
+      // export JSON
+      document.getElementById('exportArea').textContent = JSON.stringify({runs:state.runs,wickets:state.wickets,overs:state.overs,balls:state.ballsInOver,extras:state.extras,players:roster}, null, 2);
+    }
+
+    // scoring
+    function pushBall(text, runs=0, extra=false){
+      state.log.push(text);
+      if(!extra){
+        state.ballsInOver += 1;
+        if(state.ballsInOver === 6){ state.overs +=1; state.ballsInOver =0; swapStrike(); }
+      } else { state.extras += runs; }
+      state.runs += runs;
+      updateUI();
+    }
+
+    function scoreRun(r){
+      if(state.striker === null){ alert('Select a striker player first (click a player)'); return; }
+      // credit runs to striker
+      roster[state.striker].runs += r; roster[state.striker].balls += 1;
+      pushBall(`${r}`, r, false);
+      // swap on odd
+      if(r % 2 === 1) swapStrike();
+    }
+
+    function wide(){ pushBall('Wd',1,true); }
+    function wicket(){ state.wickets += 1; pushBall('W',0,false); // set next batsman as striker
+      if(state.nextBatIndex <= roster.length-1){ state.striker = state.nextBatIndex; state.nextBatIndex +=1; } else { state.striker = null; }
+    }
+
+    function swapStrike(){ const t = state.striker; state.striker = state.nonStriker; state.nonStriker = t; }
+
+    // attach controls
+    document.querySelectorAll('[data-run]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const r = Number(btn.dataset.run);
+        scoreRun(r);
+      });
+    });
+    document.querySelector('[data-action="w"]').addEventListener('click', ()=>wicket());
+    document.querySelector('[data-action="wd"]').addEventListener('click', ()=>wide());
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      if(!confirm('Reset match?')) return; location.reload();
+    });
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const data = {runs:state.runs,wickets:state.wickets,overs:state.overs,balls:state.ballsInOver,players:roster};
+      const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'crick-heroes-score.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('undoBtn').addEventListener('click', ()=>{
+      // simple undo: pop last log entry and approximate revert. (demo only)
+      const last = state.log.pop();
+      if(!last) return alert('No ball to undo');
+      // crude parse
+      if(last === 'Wd'){ state.extras = Math.max(0, state.extras-1); state.runs = Math.max(0,state.runs-1); }
+      else if(last === 'W'){ state.wickets = Math.max(0,state.wickets-1); }
+      else{ // numeric
+        const v = Number(last);
+        state.runs = Math.max(0,state.runs - v);
+        state.ballsInOver = Math.max(0,state.ballsInOver - 1);
+        // reduce striker stats approx
+      }
+      updateUI();
+    });
+
+    document.getElementById('swapBtn').addEventListener('click', ()=>{ swapStrike(); updateUI(); });
+
+    document.getElementById('addPlayerBtn').addEventListener('click', ()=>{
+      const name = prompt('New player name'); if(!name) return; const id = roster.length+1; roster.push({id,name,runs:0,balls:0}); renderPlayers();
+    });
+
+    // initial openers
+    state.striker = 0; state.nonStriker = 1; state.nextBatIndex = 2;
+    renderPlayers(); updateUI();
+  </script>
+</body>
+</html>
